@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Royal Hold'em</title>
+<script src="https://unpkg.com/peerjs@1.5.4/dist/peerjs.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Lato:wght@300;400;700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --green:#1a5c2e;--felt:#1e7a3e;--felt-dark:#165a2d;
+  --gold:#c9a84c;--gold-light:#e8c96a;
+  --dark:#0d1117;--darker:#080c10;
+  --text:#f0e6d3;--red:#c0392b;
+}
+body{background:var(--darker);font-family:'Lato',sans-serif;color:var(--text);height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.screen{display:none;width:100vw;height:100vh;align-items:center;justify-content:center;flex-direction:column}
+.screen.active{display:flex}
+
+/* ─── MENU ─── */
+#menu-screen{background:radial-gradient(ellipse at center,#1a2a1a 0%,var(--darker) 70%)}
+.menu-logo{text-align:center;margin-bottom:36px}
+.logo-suits{font-size:52px;filter:drop-shadow(0 0 18px rgba(201,168,76,.5))}
+.logo-suits span:nth-child(1),.logo-suits span:nth-child(4){color:#f0e6d3}
+.logo-suits span:nth-child(2),.logo-suits span:nth-child(3){color:#c0392b}
+.menu-logo h1{font-family:'Cinzel',serif;font-size:44px;font-weight:700;background:linear-gradient(135deg,var(--gold),var(--gold-light),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:4px;margin-top:8px}
+.menu-logo p{color:#6a7a6a;font-size:11px;letter-spacing:3px;text-transform:uppercase;margin-top:4px}
+.menu-card{background:linear-gradient(145deg,rgba(20,30,20,.97),rgba(10,20,10,.99));border:1px solid rgba(201,168,76,.3);border-radius:16px;padding:36px;width:400px;box-shadow:0 20px 60px rgba(0,0,0,.8),inset 0 1px 0 rgba(201,168,76,.1)}
+.menu-tabs{display:flex;margin-bottom:28px;border-radius:8px;overflow:hidden;border:1px solid rgba(201,168,76,.2)}
+.menu-tab{flex:1;padding:11px;text-align:center;cursor:pointer;font-family:'Cinzel',serif;font-size:12px;letter-spacing:1px;background:rgba(0,0,0,.3);color:#5a6a5a;transition:all .3s}
+.menu-tab.active{background:var(--gold);color:#0d1117;font-weight:700}
+.tab-content{display:none}.tab-content.active{display:block}
+.form-group{margin-bottom:18px}
+.form-group label{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:7px}
+.form-group input{width:100%;padding:13px 15px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--text);font-size:15px;font-family:'Lato',sans-serif;transition:border-color .3s}
+.form-group input:focus{outline:none;border-color:var(--gold);background:rgba(201,168,76,.05)}
+.form-group input::placeholder{color:#3a4a3a}
+.btn{width:100%;padding:14px;border:none;border-radius:8px;cursor:pointer;font-family:'Cinzel',serif;font-size:14px;font-weight:700;letter-spacing:2px;transition:all .3s;text-transform:uppercase}
+.btn-gold{background:linear-gradient(135deg,#b8860b,var(--gold),var(--gold-light));color:#0d1117;box-shadow:0 4px 20px rgba(201,168,76,.3)}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 6px 30px rgba(201,168,76,.5)}
+.btn-gold:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.err{color:#e74c3c;font-size:12px;margin-top:10px;text-align:center;min-height:16px}
+
+/* ─── LOBBY ─── */
+#lobby-screen{background:radial-gradient(ellipse at center,#0d1f0d 0%,var(--darker) 80%)}
+.lobby-wrap{width:520px}
+.lobby-head{text-align:center;margin-bottom:28px}
+.lobby-head h2{font-family:'Cinzel',serif;font-size:26px;color:var(--gold)}
+.code-box{display:inline-block;background:rgba(201,168,76,.1);border:1px solid var(--gold);border-radius:8px;padding:7px 22px;font-family:'Cinzel',serif;font-size:26px;letter-spacing:6px;color:var(--gold);margin-top:8px}
+.lobby-hint{color:#5a6a5a;font-size:12px;margin-top:8px}
+.lobby-players{background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.07);border-radius:12px;padding:18px;margin-bottom:18px;min-height:160px}
+.lobby-players h3{font-size:10px;letter-spacing:2px;color:#5a6a5a;text-transform:uppercase;margin-bottom:14px}
+.p-slot{display:flex;align-items:center;padding:11px 13px;background:rgba(255,255,255,.03);border-radius:8px;margin-bottom:7px;border:1px solid rgba(255,255,255,.05)}
+.p-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;margin-right:11px;flex-shrink:0;border:2px solid rgba(201,168,76,.3)}
+.p-name{font-weight:600;flex:1}
+.p-chips{color:var(--gold);font-size:12px}
+.p-crown{margin-left:7px}
+.lobby-empty{text-align:center;color:#3a4a3a;font-size:12px;padding:18px}
+.btn-sm{padding:11px;font-size:12px}
+.lobby-status{text-align:center;color:#4a5a4a;font-size:12px;margin-top:12px}
+.connecting-dots::after{content:'...';animation:dots 1.2s steps(4,end) infinite}
+@keyframes dots{0%,100%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+
+/* ─── GAME ─── */
+#game-screen{background:radial-gradient(ellipse at 50% 50%,#1a3a20 0%,#0d1a10 55%,#070d08 100%)}
+.game-wrap{position:relative;width:100vw;height:100vh;overflow:hidden}
+
+.poker-table{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:800px;height:400px}
+.table-felt{width:100%;height:100%;background:radial-gradient(ellipse at center,#2a7a45 0%,var(--felt) 50%,var(--felt-dark) 100%);border-radius:50%;border:12px solid #3d2b0f;box-shadow:0 0 0 4px #5a3d15,0 0 0 8px #3d2b0f,0 30px 80px rgba(0,0,0,.9),inset 0 0 80px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative}
+.felt-stripe{position:absolute;width:96%;height:96%;border-radius:50%;border:2px solid rgba(255,255,255,.04);pointer-events:none}
+
+.community-area{display:flex;flex-direction:column;align-items:center;gap:8px}
+.stage-lbl{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.35);font-family:'Cinzel',serif}
+.community-cards{display:flex;gap:7px}
+.pot-area{text-align:center;margin-top:8px}
+.pot-lbl{font-size:9px;color:rgba(255,255,255,.35);letter-spacing:2px;text-transform:uppercase}
+.pot-amt{font-family:'Cinzel',serif;font-size:20px;color:var(--gold);font-weight:600}
+
+/* Cards */
+.card{width:56px;height:80px;background:white;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-direction:column;box-shadow:2px 3px 10px rgba(0,0,0,.5);position:relative;user-select:none;border:1px solid rgba(0,0,0,.1);flex-shrink:0}
+.card.red{color:#c0392b}.card.black{color:#1a1a1a}
+.card.back{background:linear-gradient(135deg,#1a3c8f 25%,#0d2468 75%);border:1px solid #2a4caf}
+.card.back::after{content:'🂠';font-size:30px;color:rgba(255,255,255,.25)}
+.card.empty{background:rgba(0,0,0,.2);border:1px dashed rgba(255,255,255,.1)}
+.c-rank{font-size:15px;font-weight:700;line-height:1}
+.c-suit{font-size:17px;line-height:1}
+.c-tl{position:absolute;top:3px;left:5px;font-size:9px;font-weight:700;line-height:1.2;text-align:center}
+.c-br{position:absolute;bottom:3px;right:5px;font-size:9px;font-weight:700;line-height:1.2;text-align:center;transform:rotate(180deg)}
+.card.win{box-shadow:0 0 14px 4px rgba(201,168,76,.85),2px 3px 10px rgba(0,0,0,.5)}
+
+/* Seats */
+.seat{position:absolute;display:flex;flex-direction:column;align-items:center;transition:all .3s}
+.seat-box{background:rgba(0,0,0,.78);border:1px solid rgba(255,255,255,.09);border-radius:10px;padding:8px 13px;text-align:center;min-width:108px;backdrop-filter:blur(4px);position:relative}
+.seat.my-turn .seat-box{border-color:var(--gold);box-shadow:0 0 16px rgba(201,168,76,.4)}
+.seat.folded .seat-box{opacity:.4}
+.seat-name{font-weight:700;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:88px;margin:0 auto}
+.seat-chips{color:var(--gold);font-size:11px;margin-top:2px}
+.seat-bet{color:#f0c040;font-size:10px}
+.seat-act{font-size:10px;color:#7a8a7a;margin-top:2px;min-height:13px}
+.seat-hand{display:flex;gap:3px;margin-top:7px}
+.seat-hand .card{width:36px;height:52px}
+.seat-hand .card .c-rank{font-size:10px}
+.seat-hand .card .c-suit{font-size:12px}
+.seat-hand .card .c-tl,.seat-hand .card .c-br{font-size:7px}
+.d-btn{position:absolute;top:-9px;right:-9px;width:20px;height:20px;border-radius:50%;background:white;color:#1a1a1a;font-size:8px;font-weight:900;display:flex;align-items:center;justify-content:center;border:2px solid var(--gold);box-shadow:0 2px 5px rgba(0,0,0,.5)}
+
+/* My cards (big, bottom) */
+.my-cards{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:10}
+.my-cards .card{width:68px;height:98px}
+.my-cards .card .c-rank{font-size:19px}
+.my-cards .card .c-suit{font-size:21px}
+.my-cards .card .c-tl{font-size:11px;top:5px;left:6px}
+.my-cards .card .c-br{font-size:11px;bottom:5px;right:6px}
+
+/* HUD */
+.hud-top{position:absolute;top:12px;left:50%;transform:translateX(-50%);font-family:'Cinzel',serif;font-size:12px;color:var(--gold);letter-spacing:2px;text-transform:uppercase;background:rgba(0,0,0,.55);padding:5px 18px;border-radius:20px;border:1px solid rgba(201,168,76,.2);white-space:nowrap}
+.hud-stack{position:absolute;bottom:12px;left:12px;background:rgba(0,0,0,.65);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:9px 13px}
+.hud-stack .lbl{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#5a6a5a}
+.hud-stack .val{font-family:'Cinzel',serif;font-size:15px;color:var(--gold)}
+.hud-turn{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:7px 13px;font-size:12px;color:#8a9a8a}
+
+/* Action panel */
+.actions{position:absolute;bottom:230px;left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(0,0,0,.75);border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:12px 18px;backdrop-filter:blur(8px);z-index:20}
+.actions.hide{display:none}
+.abtn{padding:9px 18px;border:none;border-radius:7px;cursor:pointer;font-family:'Cinzel',serif;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;transition:all .2s}
+.abtn:hover{transform:translateY(-2px)}.abtn:active{transform:translateY(0)}
+.abtn-fold{background:#6e1515;color:#ffcccc}.abtn-fold:hover{background:#8a1a1a}
+.abtn-check{background:#133e58;color:#cceeff}.abtn-check:hover{background:#1a4e6a}
+.abtn-call{background:#13491e;color:#ccffcc}.abtn-call:hover{background:#1a5a26}
+.abtn-raise{background:#543a10;color:#ffe4b3}.abtn-raise:hover{background:#6a4a14}
+.abtn-allin{background:#4a1355;color:#ffccff}.abtn-allin:hover{background:#5a1a66}
+.raise-grp{display:flex;align-items:center;gap:6px}
+.raise-inp{width:76px;padding:7px 9px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:6px;color:white;font-size:12px;text-align:center}
+.raise-inp:focus{outline:none;border-color:var(--gold)}
+
+/* Winner */
+.winner-overlay{position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:100;pointer-events:none}
+.winner-overlay.hide{display:none}
+.winner-box{background:linear-gradient(135deg,#1a2a1a,#0d1a0d);border:2px solid var(--gold);border-radius:16px;padding:28px 46px;text-align:center;box-shadow:0 0 60px rgba(201,168,76,.4);animation:popIn .5s ease}
+@keyframes popIn{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+.winner-box h2{font-family:'Cinzel',serif;color:var(--gold);font-size:26px;margin-bottom:6px}
+.winner-box p{color:var(--text);font-size:14px}
+.winner-box .rank{color:#aaffaa;font-size:12px;margin-top:5px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.55}}
+.pulsing{animation:pulse 1.1s infinite}
+</style>
+</head>
+<body>
+
+<!-- MENU -->
+<div id="menu-screen" class="screen active">
+  <div class="menu-logo">
+    <div class="logo-suits"><span>♠</span><span>♥</span><span>♦</span><span>♣</span></div>
+    <h1>Royal Hold'em</h1>
+    <p>Texas Hold'em Poker</p>
+  </div>
+  <div class="menu-card">
+    <div class="menu-tabs">
+      <div class="menu-tab active" onclick="switchTab('host')">Host Game</div>
+      <div class="menu-tab" onclick="switchTab('join')">Join Game</div>
+    </div>
+    <div id="tab-host" class="tab-content active">
+      <div class="form-group">
+        <label>Your Name</label>
+        <input id="host-name" type="text" placeholder="Enter your name" maxlength="14">
+      </div>
+      <button class="btn btn-gold" id="host-btn" onclick="hostGame()">Create Lobby</button>
+    </div>
+    <div id="tab-join" class="tab-content">
+      <div class="form-group">
+        <label>Your Name</label>
+        <input id="join-name" type="text" placeholder="Enter your name" maxlength="14">
+      </div>
+      <div class="form-group">
+        <label>Lobby Code</label>
+        <input id="join-code" type="text" placeholder="XXXXXX" maxlength="6" style="text-transform:uppercase;letter-spacing:4px;font-size:20px;text-align:center">
+      </div>
+      <button class="btn btn-gold" id="join-btn" onclick="joinGame()">Join Lobby</button>
+    </div>
+    <div class="err" id="menu-err"></div>
+  </div>
+</div>
+
+<!-- LOBBY -->
+<div id="lobby-screen" class="screen">
+  <div class="lobby-wrap">
+    <div class="lobby-head">
+      <h2>Waiting Room</h2>
+      <div>Lobby Code: <span class="code-box" id="show-code">------</span></div>
+      <div class="lobby-hint">Share this code — up to 3 players</div>
+    </div>
+    <div class="lobby-players">
+      <h3>Players (<span id="p-count">0</span>/3)</h3>
+      <div id="p-list"></div>
+      <div class="lobby-empty" id="lobby-empty">Waiting for players...</div>
+    </div>
+    <button class="btn btn-gold btn-sm" id="start-btn" style="display:none" onclick="hostStartGame()">▶  Start Game</button>
+    <div class="lobby-status" id="lobby-status"></div>
+  </div>
+</div>
+
+<!-- GAME -->
+<div id="game-screen" class="screen">
+  <div class="game-wrap" id="game-wrap">
+    <div class="hud-top" id="hud-top">Royal Hold'em</div>
+    <div class="hud-turn" id="hud-turn"></div>
+
+    <div class="poker-table" id="poker-table">
+      <div class="table-felt">
+        <div class="felt-stripe"></div>
+        <div class="community-area">
+          <div class="stage-lbl" id="stage-lbl"></div>
+          <div class="community-cards" id="comm-cards"></div>
+          <div class="pot-area">
+            <div class="pot-lbl">Pot</div>
+            <div class="pot-amt" id="pot-amt">$0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="seats-container"></div>
+    <div id="my-seat-info" style="position:absolute;bottom:118px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.65);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 16px;font-size:12px;white-space:nowrap;z-index:15"></div>
+    <div class="my-cards" id="my-cards"></div>
+
+    <div class="hud-stack">
+      <div class="lbl">Your Stack</div>
+      <div class="val" id="my-stack">$1000</div>
+    </div>
+
+    <div class="actions hide" id="actions">
+      <button class="abtn abtn-fold" onclick="act('fold')">Fold</button>
+      <button class="abtn abtn-check" id="abtn-check" onclick="act('check')">Check</button>
+      <button class="abtn abtn-call" id="abtn-call" onclick="act('call')">Call $0</button>
+      <div class="raise-grp">
+        <input type="number" class="raise-inp" id="raise-val" value="20" min="1">
+        <button class="abtn abtn-raise" id="abtn-raise" onclick="act('raise')">Bet</button>
+      </div>
+      <button class="abtn abtn-allin" onclick="act('allin')">All-In</button>
+    </div>
+
+    <div class="winner-overlay hide" id="win-overlay">
+      <div class="winner-box" id="win-box"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  POKER ENGINE
+// ═══════════════════════════════════════════════════════
+const SUITS=['♠','♥','♦','♣'];
+const RANKS=['2','3','4','5','6','7','8','9','10','J','Q','K','A'];
+const RV={'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'10':10,'J':11,'Q':12,'K':13,'A':14};
+
+function mkDeck(){const d=[];for(const s of SUITS)for(const r of RANKS)d.push({r,s});return d}
+function shuffle(d){for(let i=d.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[d[i],d[j]]=[d[j],d[i]]}return d}
+
+function combos(arr,k){
+  if(k===0)return[[]];if(arr.length===k)return[arr];
+  const[f,...r]=arr;return[...combos(r,k-1).map(c=>[f,...c]),...combos(r,k)];
+}
+function eval5(cards){
+  const rv=cards.map(c=>RV[c.r]).sort((a,b)=>b-a);
+  const suits=cards.map(c=>c.s);
+  const flush=suits.every(s=>s===suits[0]);
+  let sr=[...rv];
+  let straight=sr[0]-sr[4]===4&&new Set(sr).size===5;
+  if(!straight&&JSON.stringify(sr)===JSON.stringify([14,5,4,3,2])){straight=true;sr[0]=1}
+  const cnt={};for(const r of sr)cnt[r]=(cnt[r]||0)+1;
+  const freq=Object.values(cnt).sort((a,b)=>b-a);
+  const byF=Object.entries(cnt).sort((a,b)=>b[1]-a[1]||b[0]-a[0]).map(e=>+e[0]);
+  let name,score;
+  if(flush&&straight){name='Straight Flush';score=8}
+  else if(freq[0]===4){name='Four of a Kind';score=7}
+  else if(freq[0]===3&&freq[1]===2){name='Full House';score=6}
+  else if(flush){name='Flush';score=5}
+  else if(straight){name='Straight';score=4}
+  else if(freq[0]===3){name='Three of a Kind';score=3}
+  else if(freq[0]===2&&freq[1]===2){name='Two Pair';score=2}
+  else if(freq[0]===2){name='One Pair';score=1}
+  else{name='High Card';score=0}
+  return{name,score,tb:byF}
+}
+function bestHand(cards){
+  const cs=combos(cards,5);let best=null;
+  for(const c of cs){const v=eval5(c);if(!best||v.score>best.score||(v.score===best.score&&cmpTB(v.tb,best.tb)>0))best=v}
+  return best
+}
+function cmpTB(a,b){for(let i=0;i<Math.max(a.length,b.length);i++){const d=(a[i]||0)-(b[i]||0);if(d)return d}return 0}
+function cmpHands(a,b){return a.score!==b.score?a.score-b.score:cmpTB(a.tb,b.tb)}
+
+// ═══════════════════════════════════════════════════════
+//  GAME STATE
+// ═══════════════════════════════════════════════════════
+// Player shape: {id, name, chips, hand:[], bet, folded, allIn, lastAction}
+// GS shape: {deck, community, pot, stage, dealer, currentTurn, currentBet, minRaise, showdown, winners}
+
+let gs = null; // full game state, only host maintains the canonical version
+
+function newGS(players, prevDealer = -1) {
+  const deck = shuffle(mkDeck());
+  const dealer = (prevDealer + 1) % players.length;
+  const sb = (dealer + 1) % players.length;
+  const bb = (dealer + 2) % players.length;
+  const SB=10, BB=20;
+
+  const ps = players.map((p,i) => ({
+    ...p, hand:[deck.pop(),deck.pop()], bet:0, folded:false, allIn:false, lastAction:null
+  }));
+
+  // Post blinds
+  const postBlind = (i, amt) => {
+    const actual = Math.min(amt, ps[i].chips);
+    ps[i].chips -= actual; ps[i].bet = actual;
+    return actual;
+  };
+  let pot = postBlind(sb, SB) + postBlind(bb, BB);
+  if(ps[sb].chips===0) ps[sb].allIn=true;
+  if(ps[bb].chips===0) ps[bb].allIn=true;
+
+  return {
+    deck, community:[], pot,
+    stage:'preflop', dealer, sb, bb,
+    currentTurn: (bb+1) % players.length,
+    currentBet: BB, minRaise: BB*2,
+    showdown: false, winners: null,
+    _prevDealer: dealer
+  };
+}
+
+function applyAction(state, players, pidx, action, amount) {
+  const p = players[pidx];
+  if(action==='fold'){p.folded=true;p.lastAction='fold'}
+  else if(action==='check'){p.lastAction='check'}
+  else if(action==='call'){
+    const toCall=Math.min(state.currentBet-p.bet, p.chips);
+    p.chips-=toCall; state.pot+=toCall; p.bet+=toCall;
+    p.lastAction='call';
+    if(p.chips===0)p.allIn=true;
+  } else if(action==='raise'||action==='bet'){
+    const total=Math.min(amount, p.chips+p.bet);
+    const added=total-p.bet;
+    p.chips-=added; state.pot+=added;
+    state.minRaise=total-state.currentBet;
+    state.currentBet=total; p.bet=total;
+    p.lastAction=action==='bet'?'bet':'raise';
+    if(p.chips===0)p.allIn=true;
+    players.forEach((pp,i)=>{if(i!==pidx&&!pp.folded)pp.lastAction=null});
+  }
+}
+
+function checkRoundEnd(state, players) {
+  const active = players.filter(p=>!p.folded&&!p.allIn);
+  const onlyOne = players.filter(p=>!p.folded).length===1;
+  const allDone = active.length===0 || active.every(p=>p.bet===state.currentBet&&p.lastAction!==null);
+  return onlyOne || allDone;
+}
+
+function advanceStage(state, players) {
+  players.forEach(p=>{p.bet=0;p.lastAction=null});
+  state.currentBet=0; state.minRaise=20;
+  if(state.stage==='preflop'){state.community.push(state.deck.pop(),state.deck.pop(),state.deck.pop());state.stage='flop'}
+  else if(state.stage==='flop'){state.community.push(state.deck.pop());state.stage='turn'}
+  else if(state.stage==='turn'){state.community.push(state.deck.pop());state.stage='river'}
+  else if(state.stage==='river'){doShowdown(state,players);return}
+  let start=(state.dealer+1)%players.length, loops=0;
+  while((players[start].folded||players[start].allIn)&&loops<players.length){start=(start+1)%players.length;loops++}
+  state.currentTurn=start;
+}
+
+function doShowdown(state, players) {
+  state.showdown=true;
+  const active=players.filter(p=>!p.folded);
+  if(active.length===1){
+    active[0].chips+=state.pot;
+    state.winners=[{id:active[0].id,name:active[0].name,amount:state.pot,rank:'Winner by default'}];
+  } else {
+    const ranked=active.map(p=>({...p,hs:bestHand([...p.hand,...state.community])})).sort((a,b)=>cmpHands(b.hs,a.hs));
+    const top=ranked[0].hs;
+    const winners=ranked.filter(p=>cmpHands(p.hs,top)===0);
+    const share=Math.floor(state.pot/winners.length);
+    state.winners=winners.map(w=>{
+      players.find(p=>p.id===w.id).chips+=share;
+      return{id:w.id,name:w.name,amount:share,rank:w.hs.name};
+    });
+  }
+  state.stage='ended';
+}
+
+function nextTurn(state, players) {
+  let next=(state.currentTurn+1)%players.length, loops=0;
+  while((players[next].folded||players[next].allIn)&&loops<players.length){next=(next+1)%players.length;loops++}
+  state.currentTurn=next;
+}
+
+// ═══════════════════════════════════════════════════════
+//  NETWORK (PeerJS P2P)
+// ═══════════════════════════════════════════════════════
+let peer = null;
+let myId = null;
+let myName = '';
+let amHost = false;
+let lobbyCode = null;
+
+// Host maintains: hostConnections (map id->conn), hostPlayers list
+let hostConns = {}; // peerId -> DataConnection
+let hostPlayers = []; // [{id, name, chips}]
+
+// Client has: hostConn
+let hostConn = null;
+
+function send(conn, msg) {
+  try{ conn.send(JSON.stringify(msg)) } catch(e){}
+}
+function broadcast(msg, exceptId=null) {
+  for(const [id, conn] of Object.entries(hostConns)) {
+    if(id!==exceptId) send(conn, msg);
+  }
+}
+
+// ── HOST ──
+function hostGame() {
+  const name = document.getElementById('host-name').value.trim();
+  if(!name){showErr('Enter your name');return}
+  myName = name;
+  amHost = true;
+
+  document.getElementById('host-btn').disabled = true;
+  document.getElementById('host-btn').textContent = 'Connecting...';
+
+  peer = new Peer(undefined, { debug: 0 });
+  peer.on('open', id => {
+    myId = id;
+    lobbyCode = id.slice(-6).toUpperCase();
+    hostPlayers = [{id: myId, name: myName, chips: 1000}];
+
+    document.getElementById('show-code').textContent = lobbyCode;
+    document.getElementById('start-btn').style.display = 'block';
+    document.getElementById('lobby-status').textContent = '';
+    updateLobbyUI();
+    showScreen('lobby-screen');
+  });
+
+  peer.on('connection', conn => {
+    if(hostPlayers.length >= 3){
+      setTimeout(()=>send(conn,{t:'err',msg:'Lobby full (max 3 players)'}),500);
+      return;
+    }
+    conn.on('open', () => {
+      hostConns[conn.peer] = conn;
+      // Send current lobby state
+      send(conn, {t:'welcome', players: hostPlayers, code: lobbyCode});
+    });
+    conn.on('data', raw => {
+      const msg = JSON.parse(raw);
+      hostHandleMsg(conn.peer, msg);
+    });
+    conn.on('close', () => {
+      delete hostConns[conn.peer];
+      hostPlayers = hostPlayers.filter(p=>p.id!==conn.peer);
+      broadcastLobbyUpdate();
+      updateLobbyUI();
+    });
+  });
+
+  peer.on('error', e => { showErr('Connection error: '+e.type); document.getElementById('host-btn').disabled=false; document.getElementById('host-btn').textContent='Create Lobby'; });
+}
+
+function hostHandleMsg(fromId, msg) {
+  if(msg.t==='join'){
+    if(hostPlayers.length >= 3){ send(hostConns[fromId],{t:'err',msg:'Lobby full'});return }
+    hostPlayers.push({id: fromId, name: msg.name, chips: 1000});
+    send(hostConns[fromId], {t:'joined_ok', players: hostPlayers});
+    broadcast({t:'lobby_update', players: hostPlayers}, fromId);
+    updateLobbyUI();
+  }
+  else if(msg.t==='action' && gs){
+    const pidx = gs.players.findIndex(p=>p.id===fromId);
+    if(pidx===-1||gs.state.currentTurn!==pidx)return;
+    processAction(pidx, msg.action, msg.amount);
+  }
+}
+
+function broadcastLobbyUpdate() {
+  broadcast({t:'lobby_update', players: hostPlayers});
+}
+
+function hostStartGame() {
+  if(hostPlayers.length < 2){showLobbyStatus('Need at least 2 players');return}
+  const prevDealer = gs ? gs.state._prevDealer : -1;
+  const players = hostPlayers.map(p=>({...p, hand:[], bet:0, folded:false, allIn:false, lastAction:null}));
+  const state = newGS(players, prevDealer);
+  gs = {state, players};
+
+  showScreen('game-screen');
+  // Small delay so DOM is ready before rendering
+  setTimeout(()=>sendGameState(), 50);
+  broadcast({t:'game_start'});
+}
+
+
+function processAction(pidx, action, amount) {
+  if(!gs)return;
+  applyAction(gs.state, gs.players, pidx, action, amount);
+
+  if(checkRoundEnd(gs.state, gs.players)){
+    const onlyOne = gs.players.filter(p=>!p.folded).length===1;
+    if(onlyOne){ doShowdown(gs.state, gs.players) }
+    else { advanceStage(gs.state, gs.players) }
+  } else {
+    nextTurn(gs.state, gs.players);
+  }
+
+  sendGameState();
+
+  if(gs.state.stage==='ended'){
+    setTimeout(()=>{
+      const alive = gs.players.filter(p=>p.chips>0);
+      if(alive.length>=2){
+        hostStartGame();
+      } else {
+        const winner = alive[0]?.name||'Nobody';
+        broadcast({t:'game_over', winner});
+        showWinner('🏆 Game Over!', winner+' wins everything!', false);
+      }
+    }, 5000);
+  }
+}
+
+function buildPublicState(forPlayerId=null) {
+  if(!gs)return null;
+  return {
+    community: gs.state.community,
+    pot: gs.state.pot,
+    stage: gs.state.stage,
+    dealer: gs.state.dealer,
+    currentTurn: gs.state.currentTurn,
+    currentBet: gs.state.currentBet,
+    minRaise: gs.state.minRaise,
+    showdown: gs.state.showdown,
+    winners: gs.state.winners,
+    players: gs.players.map(p=>({
+      id: p.id, name: p.name, chips: p.chips,
+      bet: p.bet, folded: p.folded, allIn: p.allIn, lastAction: p.lastAction,
+      hand: (gs.state.showdown||p.id===forPlayerId) ? p.hand : (p.hand.length ? [{hidden:true},{hidden:true}] : []),
+      handRank: gs.state.showdown && p.hand.length ? bestHand([...p.hand,...gs.state.community])?.name : null
+    }))
+  };
+}
+
+function sendGameState() {
+  // Send personalised states to each connected peer
+  const myData = buildPublicState(myId);
+  renderGame(myData);
+
+  for(const [pid, conn] of Object.entries(hostConns)){
+    send(conn, {t:'game_tick', data: buildPublicState(pid)});
+  }
+}
+
+function sendMyGameState() {
+  const myData = buildPublicState(myId);
+  renderGame(myData);
+}
+
+// ── CLIENT ──
+function joinGame() {
+  const name = document.getElementById('join-name').value.trim();
+  const code = document.getElementById('join-code').value.trim().toUpperCase();
+  if(!name){showErr('Enter your name');return}
+  if(code.length!==6){showErr('Enter a valid 6-character code');return}
+  myName = name;
+  amHost = false;
+
+  document.getElementById('join-btn').disabled = true;
+  document.getElementById('join-btn').textContent = 'Connecting...';
+
+  peer = new Peer(undefined, { debug: 0 });
+  peer.on('open', id => {
+    myId = id;
+    // Find host peer id — the lobby code IS the last 6 chars of host peer id
+    // We need to search peerjs cloud... instead, encode host full id in code
+    // Actually: we store full peer id in a shorter way. Let's just use the code
+    // as a prefix to search — but PeerJS doesn't support that.
+    // Solution: host peer ID is set to 'royalholdem-' + 6char code
+    const hostPeerId = 'royalholdem-' + code;
+    hostConn = peer.connect(hostPeerId, {reliable:true});
+    hostConn.on('open', ()=>{
+      send(hostConn, {t:'join', name});
+    });
+    hostConn.on('data', raw=>{
+      const msg = JSON.parse(raw);
+      clientHandleMsg(msg);
+    });
+    hostConn.on('close', ()=>{ showErr('Disconnected from host'); showScreen('menu-screen'); });
+    hostConn.on('error', e=>{ showErr('Failed to connect: '+e.message); document.getElementById('join-btn').disabled=false; document.getElementById('join-btn').textContent='Join Lobby'; });
+  });
+  peer.on('error', e=>{ showErr('Error: '+e.type); document.getElementById('join-btn').disabled=false; document.getElementById('join-btn').textContent='Join Lobby'; });
+}
+
+function clientHandleMsg(msg) {
+  if(msg.t==='err'){ showErr(msg.msg); return }
+  if(msg.t==='welcome'||msg.t==='joined_ok'||msg.t==='lobby_update'){
+    const players = msg.players;
+    document.getElementById('show-code').textContent = msg.code || lobbyCode || document.getElementById('show-code').textContent;
+    lobbyCode = msg.code || lobbyCode;
+    updateLobbyUI({players});
+    showScreen('lobby-screen');
+    document.getElementById('lobby-status').textContent = 'Waiting for host to start...';
+    document.getElementById('start-btn').style.display = 'none';
+  }
+  else if(msg.t==='game_start'){
+    showScreen('game-screen');
+  }
+  else if(msg.t==='game_tick'){
+    renderGame(msg.data);
+  }
+  else if(msg.t==='game_over'){
+    showWinner('🏆 Game Over!', msg.winner+' wins everything!', false);
+  }
+}
+
+function actClient(action, amount) {
+  if(!hostConn)return;
+  send(hostConn, {t:'action', action, amount});
+}
+
+// ═══════════════════════════════════════════════════════
+//  HOST PEER ID includes code
+// ═══════════════════════════════════════════════════════
+function hostGame_fixed() {} // override above after fixing peer id
+
+// Re-define hostGame to use fixed peer id
+const _origHostGame = hostGame;
+window.hostGame = function() {
+  const name = document.getElementById('host-name').value.trim();
+  if(!name){showErr('Enter your name');return}
+  myName = name;
+  amHost = true;
+
+  document.getElementById('host-btn').disabled = true;
+  document.getElementById('host-btn').textContent = 'Connecting...';
+
+  // Generate a 6-char code and use it as part of peer ID
+  const code6 = Math.random().toString(36).substr(2,6).toUpperCase();
+  const peerId = 'royalholdem-' + code6;
+  lobbyCode = code6;
+
+  peer = new Peer(peerId, { debug: 0 });
+  peer.on('open', id => {
+    myId = id;
+    hostPlayers = [{id: myId, name: myName, chips: 1000}];
+    document.getElementById('show-code').textContent = lobbyCode;
+    document.getElementById('start-btn').style.display = 'block';
+    document.getElementById('lobby-status').textContent = '';
+    updateLobbyUI();
+    showScreen('lobby-screen');
+  });
+
+  peer.on('connection', conn => {
+    if(hostPlayers.length >= 3){
+      setTimeout(()=>send(conn,{t:'err',msg:'Lobby full (max 3 players)'}),600);
+      return;
+    }
+    conn.on('open', () => {
+      hostConns[conn.peer] = conn;
+      send(conn, {t:'welcome', players: hostPlayers, code: lobbyCode});
+    });
+    conn.on('data', raw => {
+      try{ const msg=JSON.parse(raw); hostHandleMsg(conn.peer, msg); } catch(e){}
+    });
+    conn.on('close', () => {
+      delete hostConns[conn.peer];
+      hostPlayers = hostPlayers.filter(p=>p.id!==conn.peer);
+      if(gs){ gs.players = gs.players.filter(p=>p.id!==conn.peer); }
+      broadcastLobbyUpdate();
+      updateLobbyUI();
+    });
+  });
+
+  peer.on('error', e => {
+    if(e.type==='unavailable-id'){
+      // Try again with new code
+      document.getElementById('host-btn').disabled=false;
+      document.getElementById('host-btn').textContent='Create Lobby';
+      showErr('Code collision, please try again');
+      return;
+    }
+    showErr('Connection error: '+e.type);
+    document.getElementById('host-btn').disabled=false;
+    document.getElementById('host-btn').textContent='Create Lobby';
+  });
+};
+
+// ═══════════════════════════════════════════════════════
+//  UI HELPERS
+// ═══════════════════════════════════════════════════════
+function switchTab(t) {
+  document.querySelectorAll('.menu-tab').forEach((el,i)=>el.classList.toggle('active',(i===0&&t==='host')||(i===1&&t==='join')));
+  document.getElementById('tab-host').classList.toggle('active',t==='host');
+  document.getElementById('tab-join').classList.toggle('active',t==='join');
+}
+function showErr(msg) { const el=document.getElementById('menu-err'); el.textContent=msg; setTimeout(()=>el.textContent='',4000); }
+function showLobbyStatus(msg) { document.getElementById('lobby-status').textContent=msg; }
+function showScreen(id) { document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+function updateLobbyUI(data=null) {
+  const players = data?.players || hostPlayers;
+  document.getElementById('p-count').textContent = players.length;
+  document.getElementById('p-list').innerHTML = players.map(p=>`
+    <div class="p-slot">
+      <div class="p-avatar" style="background:${aColor(p.name)}">${p.name[0].toUpperCase()}</div>
+      <div class="p-name">${p.name}${p.id===myId?' (You)':''}</div>
+      <div class="p-chips">$${p.chips}</div>
+      ${p.id===(amHost?myId:(players[0]?.id))?' <div class="p-crown">👑</div>':''}
+    </div>`).join('');
+  document.getElementById('lobby-empty').style.display = players.length<2?'block':'none';
+}
+
+function aColor(name){
+  const cols=['#1a5c2e','#1a3a6a','#6a1a3a','#4a3a1a','#3a1a6a','#1a4a4a'];
+  let h=0; for(const c of name)h=(h*31+c.charCodeAt(0))&0xFFFFFFFF;
+  return cols[Math.abs(h)%cols.length];
+}
+
+// ═══════════════════════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════════════════════
+function mkCard(card, winner=false) {
+  if(!card) return `<div class="card empty"></div>`;
+  if(card.hidden) return `<div class="card back"></div>`;
+  const red = card.s==='♥'||card.s==='♦';
+  return `<div class="card ${red?'red':'black'} ${winner?'win':''}">
+    <div class="c-tl">${card.r}<br>${card.s}</div>
+    <div class="c-rank">${card.r}</div>
+    <div class="c-suit">${card.s}</div>
+    <div class="c-br">${card.r}<br>${card.s}</div>
+  </div>`;
+}
+
+let lastRenderData = null;
+function renderGame(data) {
+  lastRenderData = data;
+  const {community, pot, stage, dealer, currentTurn, currentBet, minRaise, showdown, winners, players} = data;
+  const me = players.find(p=>p.id===myId);
+  const myIdx = players.findIndex(p=>p.id===myId);
+
+  // Stage
+  const snames={preflop:'Pre-Flop',flop:'Flop',turn:'Turn',river:'River',ended:'Showdown'};
+  document.getElementById('stage-lbl').textContent = snames[stage]||stage;
+  document.getElementById('hud-top').textContent = `Royal Hold'em  ·  ${snames[stage]||''}`;
+  document.getElementById('pot-amt').textContent = `$${pot}`;
+
+  // Community
+  const cc=document.getElementById('comm-cards');
+  cc.innerHTML = community.map(c=>mkCard(c)).join('') + Array(5-community.length).fill('<div class="card empty"></div>').join('');
+
+  // My cards
+  const myCardsEl = document.getElementById('my-cards');
+  if(me?.hand?.length){
+    myCardsEl.innerHTML = me.hand.map(c=>mkCard(c)).join('');
+    myCardsEl.style.opacity = me.folded ? '0.4' : '1';
+  } else {
+    myCardsEl.innerHTML = '';
+  }
+
+  // My stack
+  if(me) document.getElementById('my-stack').textContent = `$${me.chips}`;
+
+  // Turn HUD
+  const turnP = players[currentTurn];
+  if(stage==='ended'){
+    document.getElementById('hud-turn').textContent = 'Hand over...';
+  } else if(turnP){
+    document.getElementById('hud-turn').innerHTML = turnP.id===myId
+      ? '<span style="color:#4ade80">● Your Turn</span>'
+      : `⏳ ${turnP.name}'s turn`;
+  }
+
+  // Seats
+  renderSeats(players, currentTurn, dealer, showdown, myIdx);
+
+  // Actions
+  const isMyTurn = me && turnP?.id===myId && stage!=='ended' && !me.folded;
+  document.getElementById('actions').classList.toggle('hide',!isMyTurn);
+  if(isMyTurn){
+    const toCall = currentBet - (me.bet||0);
+    const canCheck = toCall<=0;
+    document.getElementById('abtn-check').style.display = canCheck?'block':'none';
+    document.getElementById('abtn-call').style.display = canCheck?'none':'block';
+    document.getElementById('abtn-call').textContent = `Call $${toCall}`;
+    const minR = Math.max(currentBet+20, minRaise||20);
+    document.getElementById('raise-val').value = minR;
+    document.getElementById('raise-val').min = minR;
+    document.getElementById('abtn-raise').textContent = currentBet>0?'Raise':'Bet';
+  }
+
+  // Winner
+  if(showdown && winners?.length){
+    const txt = winners.map(w=>`${w.name} wins $${w.amount}${w.rank?` · ${w.rank}`:''}`).join('<br>');
+    showWinner('🏆 Winner!', txt, true);
+  } else {
+    document.getElementById('win-overlay').classList.add('hide');
+  }
+}
+
+function getSeatPos(total) {
+  const pos=[];
+  for(let i=0;i<total;i++){
+    const angle=(Math.PI/2)+(2*Math.PI*i/total);
+    pos.push({x:50+42*Math.cos(angle), y:50+36*Math.sin(angle)});
+  }
+  return pos;
+}
+
+function renderSeats(players, currentTurn, dealer, showdown, myIdx) {
+  const container = document.getElementById('seats-container');
+  const W = window.innerWidth, H = window.innerHeight;
+  const total = players.length;
+  const rawPos = getSeatPos(total);
+
+  const rotated = players.map((p,i)=>{
+    const posIdx = (i-myIdx+total)%total;
+    return {p, pos:rawPos[posIdx], oi:i};
+  });
+
+  container.innerHTML = rotated.map(({p, pos, oi})=>{
+    const px=(pos.x/100)*W, py=(pos.y/100)*H;
+    const isTurn=oi===currentTurn&&!p.folded&&!p.allIn;
+    const actMap={fold:'Folded',check:'Check',call:'Call',bet:'Bet',raise:'Raise'};
+    let handHtml='';
+    if(p.hand?.length){
+      handHtml=`<div class="seat-hand">${p.hand.map(c=>mkCard(c, showdown&&winners?.some(w=>w.id===p.id))).join('')}</div>`;
+    }
+    const isMe = p.id===myId;
+    // For my own seat: show seat box but no inline hand (big cards at bottom serve that purpose)
+    // For others: show hidden card backs (or revealed at showdown)
+    const seatHandHtml = isMe ? '' : handHtml;
+    return `<div class="seat ${isTurn?'my-turn':''} ${p.folded?'folded':''}" style="position:absolute;left:${px}px;top:${py}px;transform:translate(-50%,-50%)">
+      <div class="seat-box">
+        ${oi===dealer?'<div class="d-btn">D</div>':''}
+        <div class="seat-name">${p.name}${isMe?' (You)':''}</div>
+        <div class="seat-chips">$${p.chips}</div>
+        ${p.bet?`<div class="seat-bet">$${p.bet}</div>`:''}
+        <div class="seat-act ${isTurn?'pulsing':''}">${p.folded?'Folded':p.lastAction?(actMap[p.lastAction]||p.lastAction):(isTurn?'▶ Acting...':'')}</div>
+        ${p.handRank?`<div style="font-size:10px;color:#aaffaa;margin-top:3px">${p.handRank}</div>`:''}
+      </div>
+      ${seatHandHtml}
+    </div>`;
+  }).join('');
+}
+
+function showWinner(title, body, autoHide) {
+  const ov=document.getElementById('win-overlay');
+  document.getElementById('win-box').innerHTML=`<h2>${title}</h2><p>${body}</p>`;
+  ov.classList.remove('hide');
+  if(autoHide)setTimeout(()=>ov.classList.add('hide'),4500);
+}
+
+// ═══════════════════════════════════════════════════════
+//  ACTION DISPATCH
+// ═══════════════════════════════════════════════════════
+function act(action) {
+  let amount = 0;
+  if(action==='raise'||action==='bet'){
+    amount = parseInt(document.getElementById('raise-val').value)||0;
+  }
+  if(action==='allin'){
+    const me = lastRenderData?.players?.find(p=>p.id===myId);
+    action='raise'; amount=(me?.chips||0)+(me?.bet||0);
+  }
+  if(amHost){
+    const pidx = gs.players.findIndex(p=>p.id===myId);
+    processAction(pidx, action, amount);
+  } else {
+    actClient(action, amount);
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  INPUT BINDINGS
+// ═══════════════════════════════════════════════════════
+document.getElementById('host-name').addEventListener('keydown',e=>e.key==='Enter'&&hostGame());
+document.getElementById('join-name').addEventListener('keydown',e=>e.key==='Enter'&&joinGame());
+document.getElementById('join-code').addEventListener('keydown',e=>e.key==='Enter'&&joinGame());
+document.getElementById('join-code').addEventListener('input',e=>e.target.value=e.target.value.toUpperCase());
+window.addEventListener('resize',()=>{if(lastRenderData)renderGame(lastRenderData)});
+</script>
+</body>
+</html>
